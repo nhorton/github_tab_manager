@@ -1,0 +1,31 @@
+summary: "Test files with formal requirement traceability comments."
+instructions: |
+  Use this schema to review tests that claim to validate formal requirements.
+  The goal is durable traceability without brittle comments tied to temporary
+  implementation details.
+
+matchers:
+  - "tests/**/*"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+
+requirements:
+  durable-traceability-comments: >
+    Tests that validate a formal requirement MUST include a durable traceability
+    comment identifying the requirement ID and warning that the test must not be
+    modified unless the requirement changes.
+  valid-requirement-id: >
+    Requirement traceability comments MUST reference IDs using the pattern
+    `REQ-NNN.M` unless the repository intentionally uses another documented
+    requirement prefix or validates an external standard.
+  no-transient-comment-context: >
+    Test comments MUST NOT rely on source line numbers, pull request numbers,
+    current-diff descriptions, or other transient context that will not help a
+    future maintainer.
+  comments-match-behavior: >
+    Test comments MUST accurately describe the behavior or policy validated by
+    the test after the change.
+
+references:
+  - path: "../../../requirements/README.md"
+    description: "Requirement traceability comment format and validation mechanism guidance."

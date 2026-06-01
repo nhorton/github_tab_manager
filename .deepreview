@@ -1,0 +1,117 @@
+requirement_file_format:
+  description: "Review requirement files for judgment-based quality that complements deterministic DeepSchema checks."
+  match:
+    include:
+      - "requirements/REQ-*.md"
+  review:
+    strategy: individual
+    instructions: |
+      Review this requirements specification file for requirement quality.
+
+      Deterministic format facts such as filename shape, heading ID shape,
+      section ID consistency, and RFC 2119 keyword presence are handled by the
+      requirements_file DeepSchema. Do not duplicate those exact checks here.
+
+      Check the following judgment-based concerns:
+
+      1. **Testability**: Each requirement MUST be specific enough to verify by
+         automated test, DeepSchema, DeepReview rule, or direct reviewer
+         judgment.
+      2. **Stable identity risk**: Flag likely ID reassignment or semantic drift
+         only when the requirement text appears to reuse an existing ID for an
+         unrelated concept.
+      3. **Validation mechanism fit**: Flag requirements whose expected
+         validation mechanism is unclear or obviously mismatched.
+
+      Output Format:
+      - PASS: All requirements are specific, stable, and validation-ready.
+      - FAIL: Issues found. List each with the section ID, requirement number,
+        and a concise description of the issue.
+
+requirements_traceability:
+  description: "Verify traceability between requirements, tests, DeepSchemas, and DeepReview rules."
+  match:
+    include:
+      - "requirements/REQ-*.md"
+      - "src/**/*"
+      - "lib/**/*"
+      - "app/**/*"
+      - "tests/**/*"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - ".deepreview"
+      - ".deepwork/schemas/**/*.yml"
+  review:
+    strategy: all_changed_files
+    instructions: |
+      Review the changed files for requirements traceability.
+
+      Requirements live in `requirements/` as `REQ-NNN-<topic>.md`, with
+      individually numbered items such as `REQ-001.1`. If this repository uses a
+      different documented requirement prefix, apply this policy to that prefix.
+
+      Mechanism selection:
+      - **Automated tests**: deterministic behavior, exact values, paths,
+        generated arguments, validation outcomes, or structured data.
+      - **DeepSchemas**: file-level structural or semantic contracts.
+      - **DeepReview rules**: broad judgment-based policies spanning many files.
+
+      Flag these anti-patterns:
+      - Fragile keyword tests for judgment requirements, such as proving a
+        policy by only checking `text.includes("safe")`.
+      - Review rules for exact facts that automated tests or schemas can verify
+        deterministically.
+      - Requirement changes without corresponding test, DeepSchema, or review
+        policy updates when validation is feasible.
+
+      Produce a structured review with Coverage Gaps, Mechanism Mismatches,
+      Traceability Comment Issues, and a PASS/FAIL summary.
+
+test_file_quality:
+  description: "Verify test traceability comments are durable and correctly formatted."
+  match:
+    include:
+      - "tests/**/*"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+    exclude:
+      - "node_modules/**"
+      - "dist/**"
+      - "build/**"
+      - "coverage/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this test file for requirement traceability comment quality.
+
+      Tests that validate a formal requirement MUST have a two-line traceability
+      comment immediately before the relevant `it(...)`, `test(...)`, or
+      `describe(...)` block:
+
+      ```ts
+      // THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1).
+      // YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES.
+      it("validates durable behavior", () => {
+        // ...
+      });
+      ```
+
+      Check the following:
+      1. **Both lines present**: Every traceability comment MUST include both
+         the `THIS TEST VALIDATES` line and the `YOU MUST NOT MODIFY` line.
+      2. **Placement**: The comment block MUST appear immediately before the
+         test case or test group it governs.
+      3. **Valid requirement ID**: Requirement IDs MUST follow `REQ-NNN.M`
+         unless the repository intentionally uses another documented prefix or
+         validates an external standard.
+      4. **Durable comments**: Comments MUST describe lasting behavior or policy,
+         not line numbers, pull request numbers, or current-diff context.
+      5. **Accuracy**: Comments MUST still match the test behavior after changes.
+
+      Do NOT flag tests that have no requirement reference and are merely utility
+      or edge-case tests without formal requirement coverage claims.
+
+      Output Format:
+      - PASS: All traceability comments are correctly formatted.
+      - FAIL: Issues found. List each with the test name, line number, and a
+        concise description.

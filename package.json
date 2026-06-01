@@ -1,0 +1,10 @@
+{
+  "name": "github-tab-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension for keeping GitHub tabs sorted, deduplicated, and state-labeled.",
+  "scripts": {
+    "check": "node --check src/background.js && node --check src/content.js && python3 -m json.tool manifest.json >/dev/null && python3 -m json.tool package.json >/dev/null"
+  },
+  "devDependencies": {}
+}

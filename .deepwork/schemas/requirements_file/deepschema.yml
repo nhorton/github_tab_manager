@@ -1,0 +1,42 @@
+summary: "Requirement specification markdown files."
+instructions: |
+  Requirement files capture formal project obligations. Review them for stable
+  IDs, RFC 2119 language, testability, and an appropriate validation mechanism.
+  Prefer automated tests for deterministic behavior, DeepSchemas for file-level
+  semantic contracts, and DeepReview rules for broad judgment-based policies.
+
+  Default requirement files use the filename style `REQ-NNN-<topic>.md`, where
+  NNN is a three-digit zero-padded number and `<topic>` is a lowercase kebab-case
+  slug. Section headings use `### REQ-NNN.M: Title`. If this repository uses a
+  different requirement prefix, apply these same rules to that prefix.
+
+matchers:
+  - "requirements/REQ-*.md"
+
+requirements:
+  filename-style: >
+    Requirement filenames MUST match the regex
+    `^REQ-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*\.md$` so filenames are stable,
+    sortable, and consistent with section IDs.
+  top-level-heading-style: >
+    Each requirement file MUST begin with a top-level heading matching
+    `# REQ-NNN: Title`, where NNN matches the filename number.
+  required-overview-section: >
+    Each requirement file MUST include a `## Overview` section before its
+    requirements list.
+  required-requirements-section: >
+    Each requirement file MUST include a `## Requirements` section before its
+    requirement subsections.
+  rfc-2119-language: >
+    Each numbered requirement statement MUST use at least one RFC 2119 keyword
+    such as MUST, MUST NOT, SHOULD, SHOULD NOT, MAY, REQUIRED, RECOMMENDED, or
+    OPTIONAL.
+  stable-section-ids: >
+    Each requirement section heading MUST follow `### REQ-NNN.M: Title`, where
+    `REQ-NNN` matches the requirement file name prefix.
+  sequential-section-numbering: >
+    Requirement section numbers within a file MUST be sequential without gaps,
+    starting at `.1`.
+  specific-and-verifiable: >
+    Each requirement MUST be specific enough to verify by automated test,
+    DeepSchema, DeepReview rule, or direct reviewer judgment.
