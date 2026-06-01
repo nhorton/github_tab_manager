@@ -5,6 +5,7 @@ A Chrome extension that makes GitHub-heavy workflows easier by keeping GitHub ta
 ## Features
 
 - Keeps every `github.com` tab in one Chrome window.
+- Moves non-GitHub tabs out of the GitHub window and into the next-most-recently-opened window.
 - Sorts GitHub tabs alphabetically by URL, which naturally groups by organization, repository, and pull request number.
 - Prevents duplicate pull request tabs: opening another page for an already-open PR switches to the existing PR tab instead.
 - Prefixes merged PR tab titles with `🟣` and closed PR tab titles with `🔴`.

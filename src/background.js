@@ -3,6 +3,7 @@ const GITHUB_HOSTS = new Set(["github.com", "www.github.com"]);
 let githubWindowId = null;
 let organizeTimer = null;
 let isOrganizing = false;
+let windowIdsByOpenTime = [];
 
 function parseUrl(rawUrl) {
   try {
@@ -43,6 +44,25 @@ function sortKey(tab) {
 
 async function allTabs() {
   return chrome.tabs.query({});
+}
+
+async function rememberExistingWindows() {
+  const windows = await chrome.windows.getAll({ windowTypes: ["normal"] });
+  const liveWindowIds = new Set(windows.map((window) => window.id).filter((id) => id !== undefined));
+
+  windowIdsByOpenTime = windowIdsByOpenTime.filter((id) => liveWindowIds.has(id));
+
+  const rememberedWindowIds = new Set(windowIdsByOpenTime);
+  const unrememberedWindowIds = [...liveWindowIds]
+    .filter((id) => !rememberedWindowIds.has(id))
+    .sort((a, b) => a - b);
+
+  windowIdsByOpenTime.push(...unrememberedWindowIds);
+}
+
+async function nextMostRecentlyOpenedWindowId(excludedWindowId) {
+  await rememberExistingWindows();
+  return [...windowIdsByOpenTime].reverse().find((windowId) => windowId !== excludedWindowId) ?? null;
 }
 
 async function focusTab(tab) {
@@ -93,6 +113,31 @@ async function moveTabsToWindow(tabs, windowId) {
   }
 }
 
+async function moveNonGitHubTabsOutOfWindow(windowId) {
+  const tabs = await chrome.tabs.query({ windowId });
+  const nonGitHubTabs = tabs.filter((tab) => tab.id !== undefined && !isGitHubUrl(tab.url || tab.pendingUrl || ""));
+
+  if (nonGitHubTabs.length === 0) return;
+
+  let destinationWindowId = await nextMostRecentlyOpenedWindowId(windowId);
+
+  for (const tab of nonGitHubTabs) {
+    try {
+      if (destinationWindowId === null) {
+        const newWindow = await chrome.windows.create({ tabId: tab.id });
+        destinationWindowId = newWindow.id ?? null;
+        if (destinationWindowId !== null && !windowIdsByOpenTime.includes(destinationWindowId)) {
+          windowIdsByOpenTime.push(destinationWindowId);
+        }
+      } else {
+        await chrome.tabs.move(tab.id, { windowId: destinationWindowId, index: -1 });
+      }
+    } catch (error) {
+      console.warn("Could not move non-GitHub tab out of GitHub window", tab.id, error);
+    }
+  }
+}
+
 async function sortGitHubTabs(windowId) {
   const tabs = (await chrome.tabs.query({ windowId })).filter((tab) => isGitHubUrl(tab.url || tab.pendingUrl || ""));
   const sortedTabs = [...tabs].sort((a, b) => {
@@ -126,6 +171,7 @@ async function organizeGitHubTabs() {
     if (targetWindowId === null) return;
 
     await moveTabsToWindow(githubTabs, targetWindowId);
+    await moveNonGitHubTabsOutOfWindow(targetWindowId);
     await sortGitHubTabs(targetWindowId);
   } finally {
     isOrganizing = false;
@@ -160,10 +206,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.tabs.onRemoved.addListener(() => scheduleOrganize());
 chrome.tabs.onMoved.addListener(() => scheduleOrganize());
+chrome.windows.onCreated.addListener((window) => {
+  if (window.id !== undefined && !windowIdsByOpenTime.includes(window.id)) {
+    windowIdsByOpenTime.push(window.id);
+  }
+  scheduleOrganize();
+});
 chrome.windows.onRemoved.addListener((windowId) => {
   if (windowId === githubWindowId) githubWindowId = null;
+  windowIdsByOpenTime = windowIdsByOpenTime.filter((id) => id !== windowId);
   scheduleOrganize();
 });
 
-chrome.runtime.onInstalled.addListener(() => scheduleOrganize());
-chrome.runtime.onStartup.addListener(() => scheduleOrganize());
+chrome.runtime.onInstalled.addListener(() => {
+  rememberExistingWindows().finally(scheduleOrganize);
+});
+chrome.runtime.onStartup.addListener(() => {
+  rememberExistingWindows().finally(scheduleOrganize);
+});
+rememberExistingWindows().catch((error) => console.warn("Could not initialize window open order", error));
