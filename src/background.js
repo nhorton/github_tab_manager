@@ -107,6 +107,9 @@ async function moveTabsToWindow(tabs, windowId) {
   for (const tab of tabsToMove) {
     try {
       await chrome.tabs.move(tab.id, { windowId, index: -1 });
+      if (tab.active) {
+        await focusTab({ id: tab.id, windowId });
+      }
     } catch (error) {
       console.warn("Could not move GitHub tab", tab.id, error);
     }
@@ -124,13 +127,16 @@ async function moveNonGitHubTabsOutOfWindow(windowId) {
   for (const tab of nonGitHubTabs) {
     try {
       if (destinationWindowId === null) {
-        const newWindow = await chrome.windows.create({ tabId: tab.id });
+        const newWindow = await chrome.windows.create({ tabId: tab.id, focused: tab.active });
         destinationWindowId = newWindow.id ?? null;
         if (destinationWindowId !== null && !windowIdsByOpenTime.includes(destinationWindowId)) {
           windowIdsByOpenTime.push(destinationWindowId);
         }
       } else {
         await chrome.tabs.move(tab.id, { windowId: destinationWindowId, index: -1 });
+        if (tab.active) {
+          await focusTab({ id: tab.id, windowId: destinationWindowId });
+        }
       }
     } catch (error) {
       console.warn("Could not move non-GitHub tab out of GitHub window", tab.id, error);

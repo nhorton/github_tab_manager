@@ -26,6 +26,10 @@ When a GitHub pull request URL is opened while another tab for the same owner, r
 
 The extension MUST move non-GitHub tabs out of the GitHub window and into the next-most-recently-opened Chrome window when another window is available.
 
-### REQ-002.6: Pull Request State Title Prefixes
+### REQ-002.6: Moved Active Tab Focus
+
+When the extension moves the active tab between windows, it MUST focus the destination window and keep the moved tab active so the user can see the tab they just opened or restored.
+
+### REQ-002.7: Pull Request State Title Prefixes
 
 The extension MUST prefix tab titles for merged pull requests with a purple circle and closed pull requests with a red circle.
