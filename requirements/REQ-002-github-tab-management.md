@@ -30,6 +30,10 @@ The extension MUST move non-GitHub tabs out of the GitHub window and into the ne
 
 When the extension moves the active tab between windows, it MUST focus the destination window and keep the moved tab active so the user can see the tab they just opened or restored.
 
-### REQ-002.7: Pull Request State Title Prefixes
+### REQ-002.7: Stale Tab Event Handling
+
+The extension SHOULD ignore stale Chrome tab events for tabs that no longer exist so routine browser races do not appear as extension errors.
+
+### REQ-002.8: Pull Request State Title Prefixes
 
 The extension MUST prefix tab titles for merged pull requests with a purple circle and closed pull requests with a red circle.

@@ -42,6 +42,16 @@ function sortKey(tab) {
   return `${url.hostname.toLowerCase()}${url.pathname.toLowerCase().replace(/\/$/, "")}`;
 }
 
+function isMissingTabError(error) {
+  return /No tab with id/i.test(String(error?.message || error));
+}
+
+function warnUnlessMissingTab(message, tabId, error) {
+  if (!isMissingTabError(error)) {
+    console.warn(message, tabId, error);
+  }
+}
+
 async function allTabs() {
   return chrome.tabs.query({});
 }
@@ -66,10 +76,16 @@ async function nextMostRecentlyOpenedWindowId(excludedWindowId) {
 }
 
 async function focusTab(tab) {
-  if (tab.windowId !== undefined) {
-    await chrome.windows.update(tab.windowId, { focused: true });
+  try {
+    if (tab.windowId !== undefined) {
+      await chrome.windows.update(tab.windowId, { focused: true });
+    }
+    await chrome.tabs.update(tab.id, { active: true });
+    return true;
+  } catch (error) {
+    if (isMissingTabError(error)) return false;
+    throw error;
   }
-  await chrome.tabs.update(tab.id, { active: true });
 }
 
 async function closeDuplicatePrTab(tab) {
@@ -82,9 +98,19 @@ async function closeDuplicatePrTab(tab) {
 
   if (matches.length === 0) return false;
 
-  await focusTab(matches[0]);
-  await chrome.tabs.remove(tab.id);
-  return true;
+  for (const match of matches) {
+    const focusedExistingTab = await focusTab(match);
+    if (!focusedExistingTab) continue;
+
+    try {
+      await chrome.tabs.remove(tab.id);
+    } catch (error) {
+      if (!isMissingTabError(error)) throw error;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 async function chooseGitHubWindow(githubTabs) {
@@ -111,7 +137,7 @@ async function moveTabsToWindow(tabs, windowId) {
         await focusTab({ id: tab.id, windowId });
       }
     } catch (error) {
-      console.warn("Could not move GitHub tab", tab.id, error);
+      warnUnlessMissingTab("Could not move GitHub tab", tab.id, error);
     }
   }
 }
@@ -139,7 +165,7 @@ async function moveNonGitHubTabsOutOfWindow(windowId) {
         }
       }
     } catch (error) {
-      console.warn("Could not move non-GitHub tab out of GitHub window", tab.id, error);
+      warnUnlessMissingTab("Could not move non-GitHub tab out of GitHub window", tab.id, error);
     }
   }
 }
@@ -158,7 +184,7 @@ async function sortGitHubTabs(windowId) {
       try {
         await chrome.tabs.move(tab.id, { index });
       } catch (error) {
-        console.warn("Could not sort GitHub tab", tab.id, error);
+        warnUnlessMissingTab("Could not sort GitHub tab", tab.id, error);
       }
     }
   }
